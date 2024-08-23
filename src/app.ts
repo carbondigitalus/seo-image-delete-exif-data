@@ -1,69 +1,51 @@
 // Core Modules
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // NPM Modules
-import axios from 'axios';
-import slugify from 'slugify';
-import 'dotenv/config';
+import { exiftool } from 'exiftool-vendored';
 
-// Azure API configuration
-const subscriptionKey = process.env.API_KEY;
-const endpoint = process.env.API_URL;
-const analyzeUrl = `${endpoint}/vision/v3.2/analyze?visualFeatures=Description`;
+const directoryPath = path.join(__dirname, 'img'); // Replace with your image directory
+let count = 0;
 
-// Function to describe image using Azure Computer Vision API
-async function describeImage(imagePath: string): Promise<string> {
+async function clearExifData(filePath: string) {
   try {
-    const imageData = fs.readFileSync(imagePath);
-    const response = await axios.post(analyzeUrl, imageData, {
-      headers: {
-        'Ocp-Apim-Subscription-Key': subscriptionKey,
-        'Content-Type': 'application/octet-stream'
-      }
-    });
-    
-    const descriptions = response.data.description.captions.map((caption: any) => caption.text);
-    return descriptions.length > 0 ? descriptions[0] : 'no_description_found';
+    // Using the 'deleteAllTags' method which is not deprecated
+    await exiftool.deleteAllTags(filePath);
+    console.log('Image Count: ', (count += 1));
+    console.log(`Cleared EXIF data for ${filePath}`);
   } catch (error) {
-    console.error('Error calling Computer Vision API:', error);
-    return 'error_processing_image';
+    console.error(`Failed to clear EXIF data for ${filePath}:`, error);
   }
 }
 
-// Function to rename images based on description
-async function renameImage(filePath: string) {
-  const description = await describeImage(filePath);
-  const dir = path.dirname(filePath);
-  const originalExt = path.extname(filePath).toLowerCase();
-  const slugifiedDescription = slugify(description, { lower: true, strict: true, remove: /[*+~.()'"!:@]/g });
-  const newFileName = `${slugifiedDescription}${originalExt}`;
-  const newFilePath = path.join(dir, newFileName);
-
-  try {
-    fs.renameSync(filePath, newFilePath);
-    console.log(`Renamed ${filePath} to ${newFilePath}`);
-  } catch (error) {
-    console.error(`Failed to rename ${filePath}: ${error}`);
-  }
-}
-
-// Function to process a directory of images
-const processDirectory = async (directory: string) => {
-  console.log(`Processing directory: ${directory}`);
-  const files = fs.readdirSync(directory);
-  console.log(`Found ${files.length} files`);
-  for (const file of files) {
-    const filePath = path.join(directory, file);
-    if (fs.statSync(filePath).isFile() && /\.(jpg|jpeg|png)$/i.test(file)) {
-      console.log(`Processing file: ${file}`);
-      await renameImage(filePath);
-    } else {
-      console.log(`Skipping non-image file or directory: ${file}`);
+function processDirectory(directoryPath: string) {
+  fs.readdir(directoryPath, (err, files) => {
+    if (err) {
+      console.error(`Unable to read directory: ${directoryPath}`, err);
+      return;
     }
-  }
-};
 
-// Example usage
-const directoryPath = path.join(__dirname, 'img');
+    files.forEach((file) => {
+      const fullPath = path.join(directoryPath, file);
+      fs.stat(fullPath, (err, stats) => {
+        if (err) {
+          console.error(`Unable to stat file: ${fullPath}`, err);
+          return;
+        }
+
+        if (stats.isDirectory()) {
+          processDirectory(fullPath);
+        } else if (stats.isFile() && /\.(jpg|jpeg|png|tiff|webp)$/i.test(file)) {
+          clearExifData(fullPath);
+        }
+      });
+    });
+  });
+}
+
 processDirectory(directoryPath);
+
+process.on('exit', () => {
+  exiftool.end();
+});
