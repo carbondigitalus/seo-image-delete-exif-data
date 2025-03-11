@@ -11,7 +11,3 @@ Put all of the images in the `/src/img/` folder.
 ```
 npm run start:dev
 ```
-
-### Bug Found
-
-We didn't spend much time on this, so there is not anything that will tell you when it's done. There is an image counter built into it so you can match up the numbers. The images are only counted and not the folders.
