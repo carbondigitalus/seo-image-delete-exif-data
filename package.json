@@ -10,6 +10,7 @@
   },
   "license": "MIT",
   "scripts": {
+    "clean-images": "gulp clean-original-images",
     "start:dev": "concurrently \"nodemon ./src/app.ts\" \"tsc -w\""
   },
   "devDependencies": {
