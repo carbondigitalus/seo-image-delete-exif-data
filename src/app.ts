@@ -5,12 +5,12 @@ import * as path from 'path';
 // NPM Modules
 import { exiftool } from 'exiftool-vendored';
 
-const directoryPath = path.join(__dirname, 'img'); // Replace with your image directory
+const directoryPath = path.join(__dirname, 'img');
 let count = 0;
 
 async function clearExifData(filePath: string) {
   try {
-    // Using the 'deleteAllTags' method which is not deprecated
+    // Using the 'deleteAllTags' method
     await exiftool.deleteAllTags(filePath);
     console.log('Image Count: ', (count += 1));
     console.log(`Cleared EXIF data for ${filePath}`);
