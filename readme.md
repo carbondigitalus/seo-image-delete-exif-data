@@ -8,6 +8,14 @@ Put all of the images in the `/src/img/` folder.
 
 ## How to run the app?
 
-```
+```zsh
 npm run start:dev
+```
+
+## Clean Original Images
+
+When you run the app, all of the images that are updated will clone the image and rename the original image by appending `_original` to the end of the image file extension. Use this Gulp task to delete all of those unwanted images.
+
+```zsh
+npm run clean-images
 ```
